@@ -1,4 +1,6 @@
-EnvironmentalDataScience 🌎 - 🚧🚧🚧🚧 WORK IN PROGRESS 🚧🚧🚧🚧
+🌎EnvironmentalDataScience 🌎
+
+🚧🚧🚧🚧 WORK IN PROGRESS 🚧🚧🚧🚧
 =========================
 👨🏽‍💻 **Author:** [Xavier Rojas Nogueira](https://www.linkedin.com/in/xavier-r-nogueira-286819120/)
 
