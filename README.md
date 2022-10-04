@@ -1,7 +1,7 @@
-🌎EnvironmentalDataScience 🌎
-
+🌎 EnvironmentalDataScience 🌍
+==============================
 🚧🚧🚧🚧 WORK IN PROGRESS 🚧🚧🚧🚧
-=========================
+
 👨🏽‍💻 **Author:** [Xavier Rojas Nogueira](https://www.linkedin.com/in/xavier-r-nogueira-286819120/)
 
 🏜 **Descrpition:** A place for my tools, workflows, side projects, etc. related to environmental data science. 
