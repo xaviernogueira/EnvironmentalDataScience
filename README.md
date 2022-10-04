@@ -1,4 +1,4 @@
-🌎 EnvironmentalDataScience 🌍
+🌎 Environmenta Data Science 🌍
 ==============================
 🚧🚧🚧🚧 WORK IN PROGRESS 🚧🚧🚧🚧
 
