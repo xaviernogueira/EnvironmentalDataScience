@@ -1,5 +1,6 @@
 from typing import Union
 import plotly.graph_objects as go
+import plotly.express as px
 import numpy as np
 import pandas as pd
 from random import randint
@@ -143,5 +144,24 @@ def sankey_plot(in_df: pd.DataFrame, ordered_col_list: list, ignore_states: Unio
             out_fig = out_dir + '\\sankey_plot.png'
         fig.write_image(out_fig, scale=5)
         print(f'Sankey plots saved @ {out_fig}')
+
+    return fig.show()
+
+
+def linearfit_plot(df: pd.DataFrame, x_col: str, y_col: str):
+    """
+    Makes a plotly express scatter plot with the linear fit line displayed.
+    :param df: (pd.DataFrame) a pandas dataframe containing param:x_col and param:y_col as column headers.
+    :param x_col: (str) the independent variable / X variable dataframe header.
+    :param y_col: (str) the dependent variable / Y variable dataframe header.
+    :return: displays the HTML interactive plot.
+    """
+    print(f'Plotting x={x_col}, y={y_col}')
+    fig = px.scatter(df, x=x_col, y=y_col, trendline="ols", trendline_color_override="red")
+    fit_results = px.get_trendline_results(fig).px_fit_results.iloc[0]
+    slope = fit_results.params[1]
+    intercept = fit_results.params[0]
+    print(f'Slope: {slope}')
+    print(f'Y-intercept: {intercept}')
 
     return fig.show()
