@@ -22,7 +22,8 @@
 
 ## 🌌 `\plotting` 
 * `interactive_plotting.py` - functions that produce HTML plots (i.e., via [`plotly`](https://plotly.com/graphing-libraries/) or [`hvplot`](https://hvplot.holoviz.org/)).
-* `interactive_plotting.py` - function that produce static image plots (i.e., via [seaborn](https://seaborn.pydata.org/api.html) or [matplotlib](https://matplotlib.org/)).
+* `static_plotting.py` - function that produce static image plots (i.e., via [seaborn](https://seaborn.pydata.org/api.html) or [matplotlib](https://matplotlib.org/)).
+* `geospatial_plotting.py` - for plotting geospatial data, making maps, and visualizations.
 
 ## 🧙 `\sandbox` - a directory to store expiremental work, markdown notes files, and half-polished Jupyter Notebooks.
 
