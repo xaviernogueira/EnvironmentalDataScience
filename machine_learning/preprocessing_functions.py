@@ -8,7 +8,8 @@ from sklearn.impute import KNNImputer
 def knn_impute(df: pd.DataFrame, n_neighbors: int = 5, nodata_values: Union[float, int] = np.nan,
                normalizer=MinMaxScaler()) -> pd.DataFrame:
     """
-
+    Fill in missing values in a dataframe using K-Nearest Neighbors (KNN) imputation.
+    Note: Using KNN imputation to fill in missing training set values can increase ML model performance.
     :param df: (pd.DataFrame) a dataframe with all numerical columns.
     :param n_neighbors: (int) number of neighbors to use in KNN imputation.
     :param nodata_values: (float or int) values to be interpreted as nodata (default=np.nan).
