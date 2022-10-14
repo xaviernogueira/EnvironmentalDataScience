@@ -154,7 +154,7 @@ def plot_piecharts(df: pd.DataFrame, bool_columns: list) -> matplotlib.figure.Fi
 
 
 # define a function to plot linear fit
-def _linearfit_plot(df: pd.DataFrame, x_col: str, y_col: str, model: LinearRegression) -> matplotlib.figure.Figure:
+def linearfit_plot(df: pd.DataFrame, x_col: str, y_col: str, model: LinearRegression) -> matplotlib.figure.Figure:
     """
     :param df: (pd.DataFrame) a dataframe containing both param:x_col and param:y_col.
     :param x_col: (str) x column header (independent variable, i.e., income).
