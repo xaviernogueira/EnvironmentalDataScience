@@ -1,3 +1,4 @@
+import catboost as cb
 from catboost import CatBoostRegressor, CatBoostClassifier
 import numpy as np
 import pandas as pd
@@ -44,68 +45,101 @@ def prep_training_inputs(features, target,
             return print('ERROR: Features and Target are different lengths + no matching index found')
     return (features, target)
             
-def clean_model_params(model_instance: object, hyperparams: dict) -> dict:
-    """
-    Returns the hyperparams dictionary removing any hyperparams kwargs not
-    applicable to CatBoost.
-    """
-    pass
 
 class CatBoostML(MachineLearningModel):
     # CatBoost specific extension functions
+    def __init__(self) -> None:
+        super().__init__()
+        
+    def clean_model_params(self, model_type: str, params_dict: dict) -> dict:
+        """
+        Returns the hyperparams dictionary removing any hyperparams kwargs not
+        applicable to CatBoost.
+        :param model_type: (str) either regressor or classifier.
+        """
+        out_dict = {}
+        
+        for key, value in params_dict.items():
+            try:
+                if model_type == 'regressor':
+                    cb.to_regressor(cb.CatBoost(params={key: value}))
+                elif model_type == 'classifier':
+                    cb.to_classifier(cb.CatBoost(params={key: value}))
+                out_dict.extend({key: value})
+            except cb.CatBoostError as e:
+                print(f'CatBoostError: Could not set {key}:{value} CatBoostRegressor param')
+                print(str(e))
+        return out_dict
 
     # MachineLearningModel protocol function implementations
+    def regression_kfold_evaluation(self, )
+
     def train_regressor(self,
                     features: Union[np.ndarray, pd.DataFrame],
                     target: Union[np.ndarray, pd.Series],
-                    hyper_params: dict = None,
-                    evaluation_params: dict = None,
+                    init_model: CatBoostRegressor = None,
+                    regressor_params: dict = None,
+                    k_fold_evaluation: bool = True,
                     evaluation_kfolds: int = 10,
-                    **kwargs) -> Tuple(object, dict):
+                    verbose: bool = False,
+                    ) -> CatBoostRegressor:
 
         # prep the input data
         features, target = prep_training_inputs(features, target)
 
+        # if we pass in a trained model, verify shapes match and continue training
+        if isinstance(init_model, CatBoostRegressor):
+            if self._verify_shapes(features, target):
+                init_model.fit(features, target, verbose=verbose)
+                return CatBoostRegressor
+            else:
+                return print(f'ERROR: The shape of param:features and/or param:target do'
+                'not match the supplied param:init_model.')
+
+        # prep evaluation and hyper params
+        regressor_params = self.clean_model_params(model_type='regressor',
+                                                params_dict=regressor_params)
+   
         # train a model over a 10-Kfold CV
-        kfolds = skl.model_selection.KFold(n_splits=evaluation_kfolds)
+        if k_fold_evaluation:
+            kfolds = skl.model_selection.KFold(n_splits=evaluation_kfolds)
 
-        # make two list to store true and predicted values (in order to make performance charts)
-        true_values = []
-        predicted_values = []
+            # make two list to store true and predicted values (in order to make performance charts)
+            true_values = []
+            predicted_values = []
 
-        for train_index, test_index in kfolds.split(features):
-            X_train, X_test = features.iloc[train_index], features.iloc[test_index]
-            y_train, y_test = features.iloc[train_index], features.iloc[test_index]
+            for train_index, test_index in kfolds.split(features):
+                X_train, X_test = features.iloc[train_index], features.iloc[test_index]
+                y_train, y_test = features.iloc[train_index], features.iloc[test_index]
 
-            # build regression or classification model (uses Logloss optimization for binary classification data and Accuracy eval_metric)
-            cb_model = CatBoostRegressor(eval_metric='R2',
-                                        loss_function='RMSE',
-                                        od_type='Iter',
-                                        od_wait=250)
+                # build regression or classification model (uses Logloss optimization for binary classification data and Accuracy eval_metric)
+                cb_model = cb.to_regressor(cb.CatBoost(params=regressor_params))
+            
+                cb_model = cb_model.fit(X_train, y_train,
+                                        verbose=verbose)
 
-            cb_model = cb_model.fit(X_train, y_train, verbose=False)
+                # make a prediction using the training data
+                train_preds = cb_model.predict(X_train)
 
-            # make a prediction using the training data
-            train_preds = cb_model.predict(X_train)
+                # make a prediction using the test data
+                test_preds = cb_model.predict(X_test)
 
-            # make a prediction using the test data
-            test_preds = cb_model.predict(X_test)
+                # get train data R2 and MAE
+                train_r2 = r2_score(y_train, train_preds)
+                train_mae = skl.metrics.mean_absolute_error(y_train, train_preds)
+                train_r2s.append(train_r2)
+                train_maes.append(train_mae)
 
-            # get train data R2 and MAE
-            train_r2 = r2_score(y_train, train_preds)
-            train_mae = skl.metrics.mean_absolute_error(y_train, train_preds)
-            train_r2s.append(train_r2)
-            train_maes.append(train_mae)
-
-            # get test data R2 and MAE
-            test_preds = cb_model.predict(X_test)
-            test_r2 = r2_score(y_test, test_preds)
-            test_mae = skl.metrics.mean_absolute_error(y_test, test_preds)
-            test_r2s.append(test_r2)
-            test_maes.append(test_mae)
+                # get test data R2 and MAE
+                test_preds = cb_model.predict(X_test)
+                test_r2 = r2_score(y_test, test_preds)
+                test_mae = skl.metrics.mean_absolute_error(y_test, test_preds)
+                test_r2s.append(test_r2)
+                test_maes.append(test_mae)
 
         # make final model
-        cb_model = CatBoostRegressor(eval_metric='R2', loss_function='RMSE', od_type='Iter', od_wait=250)
+        cb_model = CatBoostRegressor(eval_metric='R2',
+         loss_function='RMSE', od_type='Iter', od_wait=250)
 
         # get mean and STD values for R2 and MAE using K-fold CV data
         out_list = get_model_outputs(depend_col,
