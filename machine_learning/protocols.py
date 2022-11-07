@@ -19,10 +19,18 @@ class MachineLearningModel(Protocol):
     """Abstract base class signature of a ML model supporting regression + classification"""
     
     @abstractmethod
+    def regression_kfold_evaluation(self, features: pd.DataFrame,
+                                    target: pd.Series,
+                                    regressor_params: dict,
+                                    k_folds: int = 10,
+                                    ) -> dict:
+        pass
+
+    @abstractmethod
     def train_regressor(self,
                     features: Union[np.ndarray, pd.DataFrame],
                     target: Union[np.ndarray, pd.Series],
-                    hyperparams: dict = None) -> Tuple(object, dict):
+                    hyperparams: dict = None) -> object:
        pass
 
     @abstractmethod
