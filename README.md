@@ -14,10 +14,10 @@
 # Repository Contents
 
 ## `\machine_learning\` 🤖 
-*  `preprocessing_functions.py`
+*  ### `preprocessing_functions.py`
     * ```python 
       csvs_to_parquets(data_dir: str, ignore_cols: list = None, to_datetime_cols: dict = None, out_path: str = None) -> str
-            """Converts very large CSV files into partitioned .parquet files in parallel using dask."""
+            """Converts very large CSV files into partitioned performance oriented .parquet files in parallel using dask."""
         ```    
         * `:param data_dir:` (str path) a valid directory path containing >=1.csv files.
         * `:param ignore_cols:` (list of str column headers, optional dtype=object columns to NOT convert to category.
@@ -28,8 +28,7 @@
     * ```python
       knn_impute(df: pd.DataFrame, n_neighbors: int = 5, nodata_values: Union[float, int] = np.nan,
                normalizer=MinMaxScaler()) -> pd.DataFrame:
-        """ Fill in missing values in a dataframe using K-Nearest Neighbors (KNN) imputation.
-        Note: Using KNN imputation to fill in missing training set values can increase ML model performance."""
+        """Fill in missing values in a dataframe using K-Nearest Neighbors (KNN) imputation. Note: Using KNN imputation to fill in missing training set values can increase ML model performance."""
       ```
 
         * `:param df:` (pd.DataFrame) a dataframe with all numerical columns.
@@ -38,9 +37,7 @@
         * `:param normalizer:` (sklearn.preprocessing class) a sklearn transformer flass capable of .fit() and .transform().
         * `:return:` (pd.DataFrame) the KNN imputed version of the input dataframe.
 
-
-    ### `\tree_learning\`
-    * `catboost_ml.py`
+* ### `catboost_ml.py`
 
 ## 🧙 `\sandbox` - a directory to store expiremental work, markdown notes files, and half-polished Jupyter Notebooks.
 
