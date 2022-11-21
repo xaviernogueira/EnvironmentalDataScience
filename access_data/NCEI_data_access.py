@@ -5,16 +5,10 @@ Documentation: https://www.ncdc.noaa.gov/cdo-web/webservices/v2#gettingStarted
 import pandas as pd
 import requests
 import gc
-from typing import Union, Tuple, List
+from typing import Union, Tuple, List, TypedDict
 from datetime import datetime
 from access_data_utilities import prep_datetime_str, get_state_bbox, get_state_fips, \
     validate_date
-
-# set environment variables
-TOKEN = 'DSsSMpVbUnklkSjSzeAZFfaNsKsvommI'
-STATE_NAME = 'pennsylvania'
-START_TIME = '2016-01-01'
-END_TIME = '2021-12-31'
 
 # use a class to limit API calls for url verifications
 class UrlChecker:
@@ -30,6 +24,12 @@ class UrlChecker:
                 token=self.token,
                 )
         return self._dataset_ids
+
+class OutputDict(TypedDict):
+    """Of the form: {'stations_df': NCEI monitoring station info dataframe,
+    'data_df': dataframe with all observations requested for the time/space AOI}"""
+    stations_df: pd.DataFrame
+    data_df: pd.DataFrame
 
 # underlying NCEI data access functions
 def get_ncei_dataset_codes(
@@ -87,14 +87,14 @@ def get_stations_by_state(
     return stations_df
 
 # main data access functions
-def get_precipitation_data(
+def get_ncei_data(
     state_name: str,
     start_time: Union[str, datetime],
     end_time: Union[str, datetime],
     token: str,
     dataset_id: str = 'GHCND',
     datatype_id: str = 'PRCP',
-    ) -> pd.DataFrame:
+    ) -> OutputDict:
 
     # format dates and statename
     state_name = state_name.lower()
@@ -126,14 +126,15 @@ def get_precipitation_data(
     # get data
     print('Getting data from NCEI API')
     years = list(range(start_dt.year, end_dt.year + 1))
+    base_data_url = base_stations_url.replace('stations', 'data')
 
     data_list = []
     for year in years:
         print(f'Processing year={year}')
-        for station_id in stations_df.index[:5]:
+        for station_id in stations_df.index:
             station_id = str(station_id)
 
-            url = base_stations_url +  f'&datasetid={dataset_id}' + \
+            url = base_data_url +  f'&datasetid={dataset_id}' + \
                 f'&locationid=FIPS:{state_fips}' + \
                 f'&datatypeid={datatype_id}' + \
                 f'&stationid={station_id}' + \
@@ -141,7 +142,7 @@ def get_precipitation_data(
 
             response = dict(requests.get(
                 url,
-                headers={'token': 'DSsSMpVbUnklkSjSzeAZFfaNsKsvommI'},
+                headers={'token': token},
                 ).json())
             if 'results' in list(response.keys()): data_list.extend(list(response['results']))
         gc.collect()
@@ -153,12 +154,8 @@ def get_precipitation_data(
         exclude=['attributes'],
     )
     data_df.index.name = 'station_id'
-    return data_df
+    return {
+        'stations_df': stations_df,
+        'data_df': data_df
+        }
 
-if __name__ == '__main__':
-    get_precipitation_data(
-    STATE_NAME,
-    START_TIME,
-    END_TIME,
-    TOKEN,
-    )
