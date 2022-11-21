@@ -15,21 +15,21 @@ class BboxDict(TypedDict):
 def prep_datetime_str(
     time: Union[str, datetime],
     format: str = r'%Y-%m-%d',
-    ) -> str:
+    ) -> Tuple[str, datetime]:
     """
     Two behaviors: 
         * if type(param:time)=str -> verifies that a string date is in the correct format.
         * if type(param:time)=datetime -> converts to a string formatted date.
-    :returns: a date string matching param:format.
+    :returns: a tuple with (datetime string, datetime object)
     """
     if isinstance(time, str):
         try:
             dt = datetime.strptime(time, format)
-            return dt.strftime(format)
+            return (dt.strftime(format), dt)
         except ValueError:
             print(f'Time string {time} does not match format={format}')
             raise ValueError
-    elif isinstance(time, datetime): time.strftime(format)
+    elif isinstance(time, datetime): return (time.strftime(format), time)
     else: 
         print('ERROR: param:time must be either a valid date string of a datetime object! '
         f'type(param:time)={type(time)}.')
