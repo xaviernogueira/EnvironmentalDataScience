@@ -91,15 +91,19 @@ def get_state_fips(
 
 def validate_date(
     response_dict: dict,
-    date_range: Tuple[datetime, datetime],
+    date_range: Tuple[str, str],
     str_format: str = '%Y-%m-%d',
         ) -> bool:
     # get station date range
     min_date = datetime.strptime(response_dict['mindate'], str_format)
     max_date = datetime.strptime(response_dict['maxdate'], str_format)
+    
+    # convert our date range to datetime
+    range_min_date = datetime.strptime(date_range[0], str_format)
+    range_max_date = datetime.strptime(date_range[-1], str_format)
 
-    if min_date <= date_range[0]:
-        if max_date >= date_range[-1]:
+    if min_date <= range_min_date:
+        if max_date >= range_max_date:
             return True
     else:
         return False

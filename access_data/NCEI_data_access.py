@@ -52,8 +52,7 @@ def get_stations_by_state(
         base_stations_url + state_addition,
         headers={'token': token},
         ).json()['results'])
-        #TODO: debug this
-
+    
     print(f'{len(stations_list)} precipitation stations total in {state_name}')
     stations_list = [i for i in stations_list if validate_date(i, date_range)]
     print(f'{len(stations_list)} precipitation stations with valid min/max date ranges')
@@ -83,9 +82,7 @@ def get_precipitation_data(
     bbox_dict = get_state_bbox(state_name)
 
     # get state fips string code
-    state_fips = get_state_fips()
-    
-    #[state_name]
+    state_fips = get_state_fips()[state_name]
 
     # get stations info as a dataframe
     print('Finding valid NCEI stations')
@@ -97,7 +94,7 @@ def get_precipitation_data(
         ncei_dataset_id='GHCND',
         )
 
-while __name__ == '__main__':
+if __name__ == '__main__':
     get_precipitation_data(
     STATE_NAME,
     START_TIME,
