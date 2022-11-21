@@ -60,16 +60,20 @@ def get_stations_by_state(
         f'Please select from the following: {url_checker.dataset_ids}')
         raise KeyError
 
-    if not base_stations_url: base_stations_url = r'https://www.ncei.noaa.gov/cdo-web/api/v2/stations?limit=1000'
-    request_url = base_stations_url + f'&datasetid={ncei_dataset_id}'
+    if not base_stations_url:
+        base_stations_url = r'https://www.ncei.noaa.gov/cdo-web/api/v2/stations?limit=1000'
+
+    request_url = base_stations_url + \
+        f'&datasetid={ncei_dataset_id}' + \
+        f'&locationid=FIPS:{state_fips}'
 
     print(f'Fetching precipitation stations for state={state_name}')
    # stations_list = list(
-    stations_list = requests.get(
-        base_stations_url + request_url + f'&locationid=FIPS:{state_fips}',
+    stations_list = list(requests.get(
+        request_url,
         headers={'token': token},
-        ) #.json() #['results'])
-    #TODO: come back, was working a second ago, getting 500 API error.
+        ).json()['results'])
+    
     stations_list = [i for i in stations_list if validate_date(i, date_range)]
     print(f'{len(stations_list)} precipitation stations with valid min/max date ranges\n Done')
 
