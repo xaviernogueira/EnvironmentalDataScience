@@ -6,7 +6,7 @@ import dask.dataframe as dd
 from typing import Union
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.impute import KNNImputer
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 
 def knn_impute(
@@ -31,6 +31,68 @@ def knn_impute(
         return pd.DataFrame(knn.fit_transform(norm_np), columns=df.columns, index=df.index)
     except Exception as e:
         print(f'Error: Exception arose - {e}')
+
+
+def categorize_features(
+    features: pd.DataFrame,
+    unique_limit: int = 20,
+) -> pd.DataFrame:
+    """
+    Converts all catgeory features to dtype=category.
+    :param features: (pd.DataFrame) features as columns in a dataframe.
+    :param unique_list: (int) if the number of unique values in a column is < param:unique_limit, it is considered categorical.
+    :returns: The input dataframe with appropriate columns categorized.
+    """
+    # id all non-numeric columns as categorical
+    obj_cols = features.select_dtypes(include='object').columns
+    features[obj_cols] = features[obj_cols].astype('category')
+
+    # convert integer columns to category depending on the number of unique values
+    int_cols = features.select_dtypes(include='int')
+    for col in int_cols:
+        if len(list(features[col].unique())) < unique_limit:
+            features[col] = features[col].astype('category')
+
+    return features
+
+
+def prep_training_inputs(
+    features: Union[np.ndarray, pd.DataFrame],
+    target: Union[np.ndarray, pd.Series],
+    allow_index_join: bool = True,
+) -> Tuple[pd.DataFrame, pd.Series]:
+
+    # if numpy inputs, convert to pandas
+    if isinstance(features, np.ndarray):
+        headers = [f'f{i}' for i in range(features.shape[1])]
+        features = pd.DataFrame(
+            features.squeeze(),
+            columns=headers,
+        )
+
+    # convert columns to category dtype as appropriate
+    features = categorize_features(features)
+
+    if isinstance(target, np.ndarray):
+        target = pd.Series(target.squeeze())
+        target.name = 'target'
+        # if multiple target columns are passed in, return an error
+        if len(target.shape) > 1:
+            return print('ERROR: Target must be a nx1 array, two columns were passed in.')
+
+    # verify that the shapes match
+    if not features.shape[0] == target.shape[0]:
+        print(f'Warning: Features and target data have different # of rows')
+        if features.index.name == target.index.name and allow_index_join:
+            print(f'Joining on matching index: {features.index.name}. '
+                  'Rows without both target and training data will be removed!')
+            joined = features.join(target, how='inner')
+            features = joined.drop(columns=target.name)
+            target = pd.Series(joined[target.name])
+            del joined
+        else:
+            return print('ERROR: Features and Target are different lengths + no matching index found')
+    return (features, target)
 
 
 def _id_csvs(data_dir: Union[Path, str]) -> dict:

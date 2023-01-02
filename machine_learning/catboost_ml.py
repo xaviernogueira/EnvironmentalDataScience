@@ -8,81 +8,20 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import r2_score, mean_absolute_error
 
 # import type hints
-from typing import Union, Tuple, List
+from typing import Union, Tuple, List, Dict, Optional
 
 # import protocol to implement
 from protocols import MachineLearningModel
-
-# functions to move to preprocessing_functions.py
-
-
-def categorize_features(
-    features: pd.DataFrame,
-    unique_limit: int = 20,
-) -> pd.DataFrame:
-    """
-    Converts all catgeory features to dtype=category.
-    :param features: (pd.DataFrame) features as columns in a dataframe.
-    :param unique_list: (int) if the number of unique values in a column is < param:unique_limit, it is considered categorical.
-    :returns: (list) a list of categorical column headers or index positions.
-    """
-    # id all non-numeric columns as categorical
-    obj_cols = features.select_dtypes(include='object').columns
-    features[obj_cols] = features[obj_cols].astype('category')
-
-    # convert integer columns to category depending on the number of unique values
-    int_cols = features.select_dtypes(include='int')
-    for col in int_cols:
-        if len(list(features[col].unique())) < unique_limit:
-            features[col] = features[col].astype('category')
-
-    return features
-
-
-def prep_training_inputs(
-    features: Union[np.ndarray, pd.DataFrame],
-    target: Union[np.ndarray, pd.Series],
-    allow_index_join: bool = True,
-) -> Tuple[pd.DataFrame, pd.Series]:
-
-    # if numpy inputs, convert to pandas
-    if isinstance(features, np.ndarray):
-        headers = [f'f{i}' for i in range(features.shape[1])]
-        features = pd.DataFrame(
-            features.squeeze(),
-            columns=headers,
-        )
-
-    # convert columns to category dtype as appropriate
-    features = categorize_features(features)
-
-    if isinstance(target, np.ndarray):
-        target = pd.Series(target.squeeze())
-        target.name = 'target'
-        # if multiple target columns are passed in, return an error
-        if len(target.shape) > 1:
-            return print('ERROR: Target must be a nx1 array, two columns were passed in.')
-
-    # verify that the shapes match
-    if not features.shape[0] == target.shape[0]:
-        print(f'Warning: Features and target data have different # of rows')
-        if features.index.name == target.index.name and allow_index_join:
-            print(f'Joining on matching index: {features.index.name}. '
-                  'Rows without both target and training data will be removed!')
-            joined = features.join(target, how='inner')
-            features = joined.drop(columns=target.name)
-            target = pd.Series(joined[target.name])
-            del joined
-        else:
-            return print('ERROR: Features and Target are different lengths + no matching index found')
-    return (features, target)
+import preprocessing_functions
 
 
 class CatBoostML(MachineLearningModel):
     # CatBoost specific extension functions
-    def __init__(self,
-                 performance_log: dict = {},
-                 ) -> None:
+    def __init__(
+        self,
+        performance_log: dict = {},
+    ) -> None:
+
         self.performance_log = performance_log
         self.parameter_log = {}
         self.true_vs_predicted = {}
@@ -96,12 +35,13 @@ class CatBoostML(MachineLearningModel):
     def clean_model_params(
         self,
         model_type: str,
-        params_dict: dict,
-    ) -> dict:
+        params_dict: Dict[str, Union[int, float, str]],
+    ) -> Dict[str, Union[int, float, str]]:
         """
         Returns the hyperparams dictionary removing any hyperparams kwargs not
         applicable to CatBoost.
         :param model_type: (str) either regressor or classifier.
+        :param params_dict: input dictionary with parameter keywords and values.
         """
         out_dict = {}
 
@@ -121,15 +61,15 @@ class CatBoostML(MachineLearningModel):
     # MachineLearningModel protocol function implementations
     def get_model_outputs(
         self,
-        train_r2s: list,
-        test_r2s: list,
-        train_maes: list,
-        test_maes: list,
-    ) -> dict:
+        train_r2s: List[float],
+        test_r2s: List[float],
+        train_maes: List[float],
+        test_maes: List[float],
+    ) -> Dict[str, List[float]]:
         """
         A function that returns a list containing mean and STD R2 and MAE values from 10-K fold CV
             for a given dependent variable's Regression model.
-        :returns: a list containing 
+        :returns: a list containing
             [depend_col (str),
             mean_train_r2,
             mean_test_r2,
@@ -160,18 +100,21 @@ class CatBoostML(MachineLearningModel):
             'std_test_mae': np_test_maes.std(),
         }
 
-        out_dict['train_test_gap'] = out_dict['mean_train_r2'] - \
+        out_dict['train_test_gap'] = (
+            out_dict['mean_train_r2'] -
             out_dict['mean_test_r2']
+        )
+
         return out_dict
 
     def regression_kfold_evaluation(
         self,
         features: pd.DataFrame,
         target: pd.Series,
-        regressor_params: dict,
-        cat_features: list = None,
+        regressor_params: Dict[str, Union[int, float, str]],
+        cat_features: Optional[List[str]] = None,
         k_folds: int = 10,
-    ) -> dict:
+    ) -> None:
         """Creates the main performance evaluation dictionary"""
         # init kfolds
         kfolds = KFold(n_splits=k_folds)
@@ -191,9 +134,15 @@ class CatBoostML(MachineLearningModel):
         predicted_arrays = []
 
         for train_index, test_index in kfolds.split(features):
-            X_train, X_test = features.iloc[train_index], features.iloc[test_index]
-            y_train, y_test = target.iloc[train_index].to_numpy(
-            ), target.iloc[test_index].to_numpy()
+            X_train, X_test = (
+                features.iloc[train_index],
+                features.iloc[test_index],
+            )
+
+            y_train, y_test = (
+                target.iloc[train_index].to_numpy(),
+                target.iloc[test_index].to_numpy()
+            )
 
             # build regression or classification model (uses Logloss optimization for binary classification data and Accuracy eval_metric)
             cb_model = cb.to_regressor(cb.CatBoost(params=regressor_params))
@@ -243,19 +192,24 @@ class CatBoostML(MachineLearningModel):
         }
         self.true_vs_predicted.update({self.run: true_vs_predicted})
 
+        return performance_dict
+
     def train_regressor(
         self,
         features: Union[np.ndarray, pd.DataFrame],
         target: Union[np.ndarray, pd.Series],
-        init_model: CatBoostRegressor = None,
-        regressor_params: dict = None,
+        init_model: Optional[CatBoostRegressor] = None,
+        regressor_params: Dict[str, Union[int, float, str]] = None,
         k_fold_evaluation: bool = True,
         evaluation_kfolds: int = 10,
         verbose: bool = False,
     ) -> CatBoostRegressor:
+
         self.run += 1
+
         # prep the input data
-        features, target = prep_training_inputs(features, target)
+        features, target = preprocessing_functions.prep_training_inputs(
+            features, target)
 
         # get a list of category features
         cat_features = list(features.select_dtypes('category').columns)
@@ -307,6 +261,9 @@ class CatBoostML(MachineLearningModel):
             verbose=verbose,
         )
 
-    def train_classifier(self,
-                         features: pd.DataFrame, target: pd.Series) -> object:
-        pass
+    def train_classifier(
+        self,
+        features: pd.DataFrame,
+        target: pd.Series,
+    ) -> object:
+        raise NotImplementedError
