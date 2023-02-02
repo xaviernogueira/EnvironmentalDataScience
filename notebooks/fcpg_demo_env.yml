@@ -1,0 +1,37 @@
+name: fcpgtools_demo
+channels:
+  - conda-forge
+  - nodefaults
+
+dependencies:
+  - python =3.9
+
+  # For data processing 
+  - xarray
+  - dask
+  - pysheds
+
+  # For API access
+  - fsspec
+  - s3fs
+  - h5netcdf
+  - pydaymet >=0.13.0
+  - py3dep
+  - pynhd 
+
+  # Interactivity & Visualization (optional, but required for examples)
+  - jupyterlab
+  - ipympl
+  - nodejs
+  - hvplot
+
+# Dev tools: Language Server Protocol (LSP) (Optional), for:
+  - python-lsp-server # LSP extension for Python (pylsp), including:
+  - pylsp-mypy  # MyPy type checking for Python >=3.7.
+  - jupyterlab-lsp # Provides both server extension and lab extension
+
+  # Package management
+  - conda
+  - mamba
+  - conda-libmamba-solver  # Faster env solver, https://conda.github.io/conda-libmamba-solver/
+  - pip
