@@ -23,6 +23,7 @@ dependencies:
   - nodejs
   - hvplot
   - geoviews
+  - imageio
 
 # Dev tools: Language Server Protocol (LSP) (Optional), for:
   - python-lsp-server # LSP extension for Python (pylsp), including:
